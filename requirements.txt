@@ -1,22 +1,23 @@
-# Core LLM + LangChain ecosystem
-langchain>=0.2.0
-langchain-core>=0.2.0
-langchain-community>=0.2.0
+# LLM + LangChain
+langchain>=1.0.0
+langchain-core>=1.0.0
 langchain-groq
-streamlit>=1.0.0
+langgraph
+tenacity
 
-# Tavily Search Tool
+# UI
+streamlit>=1.40.0
+
+# Search
 tavily-python>=0.3.0
 
-# Web scraping
+# Scraping
 beautifulsoup4>=4.12.0
 readability-lxml
+lxml>=5.0.0
+lxml_html_clean
 trafilatura
 requests>=2.31.0
-lxml>=5.0.0
 
 # Environment variables
 python-dotenv>=1.0.0
-
-# logging/ debugging
-rich>=13.7.0
