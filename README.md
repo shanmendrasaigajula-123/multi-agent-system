@@ -1,148 +1,183 @@
-# NEXUS AI
+# 🔬 NEXUS AI: Multi-Agent Research Assistant
 
-NEXUS AI is an open-source, multi-agent research assistant. Enter a research topic in the Streamlit interface and the system searches the web, extracts useful webpage content, writes a structured report, and evaluates the result.
+An AI research workspace where four agents work as a pipeline: one searches the web, one reads the pages, one writes a structured report, and one critiques it with a score out of 10.
 
-## Features
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-6366f1?style=for-the-badge)](https://multi-agent-research-system-24tb.onrender.com/)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge)
 
-- Web research powered by Tavily Search
-- Four-stage research workflow:
-  - **Search Agent** finds relevant sources
-  - **Reader** extracts readable content from up to three source pages
-  - **Writer** creates a structured research report
-  - **Critic** scores the report and suggests improvements
-- Streamlit dashboard with report, source, scraped-content, and critic-review tabs
-- Downloadable Markdown research reports
-- Graceful handling of search, scraping, and model failures
+**👉 Try it live: [multi-agent-research-system-24tb.onrender.com](https://multi-agent-research-system-24tb.onrender.com/)**
 
-## Technology stack
+> The app runs on free tiers. The first load can take 30 to 60 seconds while the server wakes up, and the demo is limited to 3 research runs per session.
 
-- **Python** - application language
-- **Streamlit** - interactive web application
-- **LangChain** - agents, prompts, tools, and model pipelines
-- **LangGraph / LangChain agents** - agent orchestration primitives
-- **Groq** - large language model provider through `langchain-groq`
-- **Tavily** - web search API
-- **Requests** - HTTP requests for source pages
-- **Trafilatura** - primary article-content extraction
-- **Readability-lxml and BeautifulSoup** - fallback extraction and HTML cleaning
-- **python-dotenv** - local environment configuration
+---
 
-## Requirements
+## 📸 Demo
 
-- Python 3.10 or newer
-- A [Groq API key](https://console.groq.com/)
-- A [Tavily API key](https://app.tavily.com/)
+![NEXUS AI home screen](docs/home.png)
 
-## Installation
+![Research report and critic review](docs/report.png)
 
-1. Clone the repository and enter the project directory:
+<!-- Optional: add a short screen recording as docs/demo.gif and uncomment the line below -->
+<!-- ![Demo](docs/demo.gif) -->
 
-   ```bash
-   git clone https://github.com/shanmendrasaigajula-123/multi-agent-system.git
-   cd multi-agent-system
-   ```
+---
 
-2. Create and activate a virtual environment:
+## ✨ What it does
 
-   **Windows PowerShell**
+Enter any research topic and NEXUS AI will:
 
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
+1. **Search** the web for recent, reliable sources
+2. **Read** the most relevant pages and extract clean text
+3. **Write** a structured report (Introduction, Key Findings, Conclusion, Sources)
+4. **Critique** the report with a score, strengths, and areas to improve
 
-   **macOS/Linux**
+The dashboard shows the final report (downloadable as Markdown), the raw search results, the scraped content, and the critic's review.
 
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
+---
 
-3. Install the dependencies:
+## 🧠 How it works
 
-   ```bash
-   python -m pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
+```mermaid
+flowchart LR
+    A[Research topic] --> B[Search Agent<br/>Tavily]
+    B -->|URLs + snippets| C[Reader<br/>Trafilatura / Readability]
+    C -->|Scraped text| D[Writer Chain<br/>Groq LLM]
+    D -->|Report| E[Critic Chain<br/>Groq LLM]
+    E --> F[Streamlit dashboard]
+    D --> F
+```
 
-4. Create a `.env` file in the project root:
+All steps share one `state` dictionary, which is passed from step to step and returned to the UI.
 
-   ```dotenv
-   GROQ_API_KEY=your_groq_api_key
-   TAVILY_API_KEY=your_tavily_api_key
-   ```
+| Step | Component | Role |
+|------|-----------|------|
+| 1 | Search Agent (LangChain agent + Tavily tool) | Finds sources for the topic |
+| 2 | Reader (plain Python scraper) | Extracts readable text from the top pages |
+| 3 | Writer Chain (prompt, LLM, parser) | Drafts the structured report |
+| 4 | Critic Chain (prompt, LLM, parser) | Scores and reviews the report |
 
-   Never commit `.env` or expose API keys in source code. The repository's `.gitignore` is configured for local environment files.
+---
 
-## Running the application
+## 🛠️ Design decisions
 
-Start the Streamlit application from the project root:
+Problems I ran into while building this, and how I handled them:
+
+- **Failures don't kill the run.** If scraping fails, the writer falls back to the search results. If the critic fails, the report is still shown and the error is displayed in the Critic tab.
+- **The reader doesn't use an LLM.** My first version let an agent choose and scrape URLs. It looped, repeated pages, invented URLs, and used up the daily token limit. Now plain Python extracts URLs from the search results, removes duplicates, and scrapes them directly, which costs zero tokens.
+- **Reasoning models can return empty text.** The critic uses a dedicated model instance with low reasoning effort and a token cap, plus retries, so the answer isn't starved by hidden reasoning.
+- **Two scraping strategies.** Trafilatura runs first, and Readability with BeautifulSoup is the fallback.
+- **Usage caps on the demo.** A per-session limit and a global daily limit keep the free-tier API quota from running out, and rate-limit errors show a friendly message.
+
+---
+
+## 🧰 Tech stack
+
+- **Orchestration:** LangChain, LangGraph
+- **LLM:** Groq (`openai/gpt-oss-20b`)
+- **Search:** Tavily
+- **Scraping:** Trafilatura, Readability, BeautifulSoup, Requests
+- **UI:** Streamlit
+- **Deployment:** Render
+
+---
+
+## 📁 Project structure
+
+```
+.
+├── app.py                    # Streamlit UI, usage limits, dashboard
+├── requirements.txt
+├── docs/                     # Screenshots for this README
+└── src/
+    ├── agents/
+    │   └── agents.py         # LLMs, agents, writer and critic chains
+    ├── tools/
+    │   └── tools.py          # web_search and scrape_url tools
+    └── pipelines/
+        └── pipeline.py       # The 4-step research pipeline
+```
+
+---
+
+## 🚀 Run it locally
+
+**1. Clone the repo**
+
+```bash
+git clone <your-repo-url>
+cd <your-repo-folder>
+```
+
+**2. Create a virtual environment** (Python 3.11 recommended)
+
+```bash
+python -m venv .venv
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+**3. Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+**4. Add your API keys.** Create a `.env` file in the project root:
+
+```env
+GROQ_API_KEY=your_groq_key
+TAVILY_API_KEY=your_tavily_key
+```
+
+You can get free keys from [console.groq.com](https://console.groq.com) and [tavily.com](https://tavily.com).
+
+**5. Start the app**
 
 ```bash
 streamlit run app.py
 ```
 
-Streamlit will print a local URL, usually `http://localhost:8501`. Open it in a browser, enter a topic, and select **Generate Research**.
+Then open http://localhost:8501.
 
-For a simple command-line pipeline run, edit the sample topic in `main.py` and run:
+---
 
-```bash
-python main.py
-```
+## ☁️ Deploy on Render
 
-## Architecture
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `streamlit run app.py --server.port $PORT --server.address 0.0.0.0`
+- **Environment variables:** `GROQ_API_KEY`, `TAVILY_API_KEY`, `PYTHON_VERSION` (for example `3.11.9`)
 
-```text
-User
-  |
-  v
-Streamlit UI (app.py)
-  |
-  v
-Research pipeline (src/pipelines/pipeline.py)
-  |
-  +--> Search Agent ----> Tavily Search API
-  |
-  +--> Reader ----------> HTTP fetch + Trafilatura/Readability/BeautifulSoup
-  |
-  +--> Writer ----------> Groq LLM via LangChain
-  |
-  +--> Critic ----------> Groq LLM via LangChain
-  |
-  v
-Research report, sources, scraped content, and feedback
-```
+---
 
-The pipeline keeps the intermediate results in a shared state dictionary. Search failures stop the run, while scraping and critic failures are surfaced in the final state so the report can still be displayed when possible.
+## ⚠️ Limitations
 
-## Project structure
+- Free-tier API limits apply, so the demo may pause when the daily quota is used.
+- Some websites block scrapers, so a few sources may return no content.
+- Reports are only as good as the sources found. Always verify important claims.
 
-```text
-.
-├── app.py                         # Streamlit user interface
-├── main.py                        # Optional command-line pipeline entry point
-├── requirements.txt               # Python dependencies
-├── src/
-│   ├── agents/
-│   │   └── agents.py              # Groq models, agents, writer, and critic chains
-│   ├── pipelines/
-│   │   └── pipeline.py            # End-to-end research workflow
-│   └── tools/
-│       └── tools.py               # Tavily search and webpage scraping tools
-└── LICENSE
-```
+---
 
-## Contributing
+## 🔮 Future improvements
 
-Contributions are welcome. To get started:
+- Let users add their own API keys in the sidebar
+- Add a revision loop where the writer improves the report using the critic's feedback
+- Export reports to PDF
+- Cache results for repeated topics
 
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/my-change`
-3. Make and test your changes.
-4. Open a pull request with a clear description of the problem and solution.
+---
 
-Please avoid committing credentials, generated files, or local virtual environments.
+## 👤 Author
 
-## License
+**Shanmendra Sai Gajula**
+2nd-year B.Tech student at KL University, building toward an AI/agentic AI engineering career.
 
-This project is distributed under the license in [LICENSE](LICENSE).
+- GitHub: [add your GitHub profile link]
+- LinkedIn: [add your LinkedIn profile link]
+
+Feedback and suggestions are welcome. Open an issue or reach out on LinkedIn.
