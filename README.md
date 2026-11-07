@@ -15,9 +15,16 @@ An AI research workspace where four agents work as a pipeline: one searches the 
 
 ## 📸 Demo
 
-![NEXUS AI home screen](docs/home.png)
+## NEXUS AI home screen
 
-![Research report and critic review](docs/report.png)
+
+<img width="1924" height="905" alt="Screenshot 2026-11-07 134521" src="https://github.com/user-attachments/assets/2374f614-7be3-4973-a670-53ecd2071c9e" />
+
+
+## Research report and critic review
+
+
+<img width="1924" height="906" alt="NEXUS DASHBOAARD" src="https://github.com/user-attachments/assets/b3fd85db-de3f-4d96-a744-8715d40ea697" />
 
 <!-- Optional: add a short screen recording as docs/demo.gif and uncomment the line below -->
 <!-- ![Demo](docs/demo.gif) -->
